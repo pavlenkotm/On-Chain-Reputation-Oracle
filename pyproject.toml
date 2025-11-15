@@ -26,7 +26,8 @@ dev = ["pytest"]
 ocro = "ocro.cli.cli:app"
 
 [tool.setuptools.packages.find]
-where = ["onchain-rep-oracle"]
+where = ["."]
+include = ["ocro*"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
