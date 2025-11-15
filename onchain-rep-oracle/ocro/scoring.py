@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, Iterable, List, Tuple
 
 from .chains import EthereumProvider
 from .metrics import MetricResult, aggregate_metrics, normalize_value
@@ -75,6 +75,33 @@ class ScoringEngine:
         final_score = int(normalized_score * 1000)
         logger.debug("Score for %s: %s", address, final_score)
         return ScoreDetails(score=final_score, metrics=metrics)
+
+    def calculate_many(self, addresses: Iterable[str]) -> Dict[str, ScoreDetails]:
+        """Calculate scores for a batch of addresses.
+
+        Duplicate addresses are automatically deduplicated to avoid repeated
+        provider calls. The return value maps each unique address to its
+        ``ScoreDetails``.
+        """
+
+        results: Dict[str, ScoreDetails] = {}
+        for address in addresses:
+            if address in results:
+                continue
+            results[address] = self.calculate(address)
+        return results
+
+    def rank_addresses(self, addresses: Iterable[str]) -> List[Tuple[str, ScoreDetails]]:
+        """Return the provided addresses ordered by their score.
+
+        The ranking is computed using :meth:`calculate_many` so the same
+        deduplication guarantees apply. The list is sorted in descending order
+        (best score first).
+        """
+
+        batch = self.calculate_many(addresses)
+        ranked = sorted(batch.items(), key=lambda item: item[1].score, reverse=True)
+        return ranked
 
 
 def calculate_reputation_score(address: str) -> int:
