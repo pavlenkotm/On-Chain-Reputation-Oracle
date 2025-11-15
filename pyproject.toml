@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "onchain-rep-oracle"
+version = "0.1.0"
+description = "On-Chain Reputation Oracle (OCRO)"
+readme = "README.md"
+authors = [{name = "OCRO Devs"}]
+license = {text = "MIT"}
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "web3",
+    "typer",
+    "pydantic",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+ocro = "ocro.cli.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["onchain-rep-oracle"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
