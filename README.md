@@ -9,6 +9,7 @@ with other applications or experiments.
 
 - Deterministic reputation scoring in the range of 0–1000
 - Modular metric abstraction with support for new chains or signals
+- Activity consistency signal that rewards steady, organic usage
 - Ethereum data provider with mock mode for local development
 - FastAPI REST endpoints and Typer CLI entry point
 - Comprehensive unit tests covering scoring logic and provider fallbacks

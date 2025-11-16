@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 from typing import Dict, Tuple
 
@@ -10,10 +11,11 @@ from .metrics import MetricResult, aggregate_metrics, normalize_value
 
 logger = logging.getLogger(__name__)
 
-AGE_WEIGHT = 0.25
-TX_WEIGHT = 0.25
-VOLUME_WEIGHT = 0.30
-DIVERSITY_WEIGHT = 0.20
+AGE_WEIGHT = 0.22
+TX_WEIGHT = 0.22
+VOLUME_WEIGHT = 0.26
+DIVERSITY_WEIGHT = 0.15
+CONSISTENCY_WEIGHT = 0.15
 
 
 @dataclass
@@ -43,6 +45,7 @@ class ScoringEngine:
         tx_count = provider.get_transaction_count(address)
         total_volume_eth = provider.get_total_volume_eth(address)
         contract_diversity = provider.get_unique_contracts_interacted(address)
+        activity_consistency = calculate_activity_consistency(tx_count, wallet_age_days)
 
         metrics = (
             MetricResult(
@@ -69,6 +72,12 @@ class ScoringEngine:
                 weight=DIVERSITY_WEIGHT,
                 normalized_value=normalize_value(contract_diversity, 50.0),
             ),
+            MetricResult(
+                name="activity_consistency",
+                value=activity_consistency,
+                weight=CONSISTENCY_WEIGHT,
+                normalized_value=activity_consistency,
+            ),
         )
 
         normalized_score = aggregate_metrics(metrics)
@@ -82,6 +91,22 @@ def calculate_reputation_score(address: str) -> int:
 
     engine = ScoringEngine()
     return engine.calculate(address).score
+
+
+def calculate_activity_consistency(tx_count: int, wallet_age_days: float) -> float:
+    """Reward steady activity and penalize erratic surges or inactivity.
+
+    The calculation applies a Gaussian kernel centered around a healthy cadence of
+    ~1.5 transactions per day, tapering off smoothly for bursty or dormant wallets.
+    This maintains determinism while adding a dynamic signal that values sustained
+    engagement over time.
+    """
+
+    tx_per_day = tx_count / max(wallet_age_days, 1.0)
+    center = 1.5
+    sigma = 2.5
+    consistency = math.exp(-((tx_per_day - center) ** 2) / (2 * sigma**2))
+    return max(0.0, min(1.0, consistency))
 
 
 __all__ = ["calculate_reputation_score", "ScoringEngine", "ScoreDetails"]
