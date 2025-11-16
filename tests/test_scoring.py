@@ -34,11 +34,24 @@ def test_calculate_reputation_score_bounds():
 
 def test_scoring_weights_applied_correctly():
     provider = DummyProvider(age=365, tx=0, volume=0, contracts=0)
-    engine = ScoringEngine(provider=provider)  # only age contributes -> 0.25
+    engine = ScoringEngine(provider=provider)
     result = engine.calculate(SAMPLE_ADDRESS)
-    assert result.score == 250
+    assert result.score == 345
 
     provider = DummyProvider(age=365, tx=1000, volume=100, contracts=50)
     engine = ScoringEngine(provider=provider)
     result = engine.calculate(SAMPLE_ADDRESS)
-    assert result.score == 1000
+    assert result.score == 982
+
+
+def test_activity_consistency_rewards_steady_usage():
+    """Burst activity on a young wallet should be penalized versus steady use."""
+
+    burst_provider = DummyProvider(age=10, tx=100, volume=10, contracts=5)
+    steady_provider = DummyProvider(age=200, tx=100, volume=10, contracts=5)
+
+    burst_score = ScoringEngine(provider=burst_provider).calculate(SAMPLE_ADDRESS).score
+    steady_score = ScoringEngine(provider=steady_provider).calculate(SAMPLE_ADDRESS).score
+
+    assert burst_score < steady_score
+    assert steady_score >= 300
